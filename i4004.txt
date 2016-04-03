@@ -1,0 +1,11 @@
+Lajos Kintli 写的 Intel 400x Analyzer V2.00 分析：
+
+软件模拟了如下chip
+4001 ROM
+4002 RAM
+4003 Shift Register
+4004 CPU
+
+ROM中存放8bit的指令，然而由于总线宽度只有4bit，所以分两次从ROM中读出，第一次读出高4bit，第二次读出低4bit
+具体过程如下：
+CMROM拉高表示发起一次读ROM操作，拉高后在CLK1的两个上升沿分依次输出高4bit和低4bit。
