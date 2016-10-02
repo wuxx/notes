@@ -1,0 +1,191 @@
+8个32bit的数据寄存器D0-D7
+7个32bit的地址寄存器A0-A6
+2个32bit的堆栈指针寄存器A7-user A7-priv
+1个32bit的程序计数器PC
+1个16bit的状态寄存器CCR (XNZVC)
+
+但是MC68000的地址空间只有24bit
+0x0 - 0xFFFFFF
+所以地址寄存器的高8位是无效的
+
+异常向量表
+0x0 - 0x3FF
+每个向量4 Bytes，共可容纳1024 / 4 = 256 个向量
+vector[0] - vector[63] 为CPU预先定义的内部异常。
+剩下的192个向量可以由用户定义为外部中断
+
+
+NEO-GEO 机器笔记
+CPU 地址空间：0x000000 - 0xFFFFFF
+0x000000   0x0fffff   r/o        Rom Bank 1
+0x100000   0x1fffff   r/w        Work Ram (0xffff in size, mirrored 16 times)
+0x200000   0x2fffff   r/o        Rom Bank 2
+0x200000   0x2fffef   w/o        Protection etc. on some games
+0x2ffff0   0x2fffff   w/o        Banking registers
+0x3c0000   0x3dffff   r/w        Video Access
+0x400000   0x7fffff   r/w        Palette (0x1fff in size, mirrored)
+0x800000   0x800fff   r/w        Mem Card (mirrored?)
+0xc00000   0xcfffff   r/o        BIOS rom (mirrored 8 times)
+0xd00000   0xdfffff   r/w        SRAM
+
+
+
+内存搜寻: ci, cn, cl
+
+    ci
+    搜寻任务初始化, 每次搜寻一开始一定要输入这指令
+
+    cn
+    搜寻指令
+    例子:
+    cn eq,60
+    搜寻目标等于60 (十六进制)
+        
+    cn eq,#96
+    搜寻目标等于96 (十进制)
+
+    cn eq
+    搜寻目标的数值没有变化
+
+    cn ne
+    搜寻目标的数值有变化
+        
+    cn +
+    搜寻目标的数值增加
+    
+    cn -
+    搜寻目标的数值减少
+        
+    cn +,3
+    搜寻目标的数值增加3 (十六进制)
+
+    cl
+    列出所有搜寻结果
+
+    cl xxx.txt
+    输出所有搜寻结果至档案xxx.txt, 其输出的格式为XML cheat金手指的格式
+
+    
+内存监视点指令: wp, wplist, wpclear
+    例子:
+    wp 1234,1,r
+      在地址1234下读取监视点(该地址被读取的时候中断), 数据长度1
+
+    wp 1234,2,w
+      在地址1234下写入监视点(该地址被写入的时候中断), 数据长度2
+     
+    wp 1234,6,rw
+      在地址1234下读写监视点(该地址被读取或被写入的时候中断), 数据长度6
+
+    wp 23456,a,w,wpdata == 1
+      在地址1234下写入监视点, 数据长度a, 且写入的数据等于1
+
+    wplist
+      列出所有监视点
+
+    wpclear 3
+      删除编号3的监视点
+
+    wpclear
+      删除所有监视点
+
+      
+
+程序断点指令: bp, bplist, bpclear
+    例子:
+    bp 1234
+      在地址1234下断, 当程序运行到地址1234的程序代码的时候会中断
+
+    bp 23456,a0 == 0 && a1 == 0
+      在地址23456下断, 且中断条件为a0等于0以及a1等于0
+
+    bplist
+      列出所有断点
+
+    bpclear 3
+      删除编号3的断点
+
+    bpclear
+      删除所有断点
+
+      
+      
+跟蹤紀錄指令: trace
+    例子:
+    trace 01.txt
+    跟踪当前CPU运行的所有代码, 输出至文件01.txt
+
+    trace off
+    停止跟踪, 并且关闭文件
+
+    trace 01.txt,0
+    跟踪编号为0的CPU运行的所有代码, 输出至文件01.txt
+
+    trace off,0
+    停止跟踪编号为0的CPU, 并且关闭文件
+
+    trace 01.txt,0,{tracelog "A=%02X ",a}
+    跟踪编号为0的CPU运行的所有代码, 输出至文件01.txt 
+    并且在每一行的前面, 写上"A=a "
+    "A=%02X ",a为一个C语言printf函数常用的输出格式
+    意为将a的值代入%02X中, 而02表示两位数, 不足两位时以0填入
+    X表示为大写十六进制数
+
+
+
+内存直接写入指令: maincpu
+    格式为 maincpu.[][]@地址=数据
+    第一个[]:
+    o 表示ROM地址
+    p 表示RAM地址
+
+    第二个[]:
+    d 表示4字节
+    w 表示2字节
+    b 表示1字节
+
+    例子:
+    maincpu.ob@1234=FF
+    在ROM地址1234处, 写入FF一个字节
+
+    maincpu.ow@1234=4E71
+    在ROM地址1234处, 写入4E 71两个字节
+
+    maincpu.od@1234=600A4E71
+    在ROM地址1234处, 写入60 0A 4E 71四个字节
+
+    注: 如果是RAM地址, 可以在内存浏览窗口中直接改写
+    
+
+其他:
+    dasm 输出档案名,地址,长度
+    输出程序的反汇编代码
+    例子:
+    dasm 01.txt,0,100000
+    将程序汇编代码自地址0开始, 长度100000, 输出至文件01.txt
+
+    softreset
+    游戏重启, 但不重新载入ROM
+
+    hardreset
+    游戏重启, 且重新载入ROM
+
+    snap xxx.png
+    截图为xxx.png
+
+  
+  
+  
+热键:
+    ~ 中断游戏
+    F5 运行游戏
+    F12 运行游戏且隐藏调试窗口
+    F11 步入, 单步执行, 会进入子程序
+    F10 步过, 单步执行, 不会进入子程序
+    Shift+F11 执行到子程序返回
+    Ctrl+M 内存浏览窗口
+    F6 运行到下个CPU, 有时候~中断游戏会停在音效控制的CPU, 用这指令可以切换到主CPU
+
+
+
+
